@@ -38,6 +38,22 @@ CATEGORIES = {
         'citilink': 'ssd-nakopiteli',
         'dns': '17a8937b16404e77/ssd-nakopiteli',
     },
+    'Материнские платы': {
+        'citilink': 'materinskie-platy',
+        'dns': '17a8a16716404e77/materinskie-platy',
+    },
+    'Ноутбуки': {
+        'citilink': 'noutbuki',
+        'dns': '17a8971f16404e77/noutbuki',
+    },
+    'Сборки ПК': {
+        'citilink': 'gotovye-kompyutery',
+        'dns': '17a891f016404e77/personalnye-kompyutery',
+    },
+    'Кабели и провода': {
+        'citilink': 'kabeli-i-perekhodniki',
+        'dns': '17a8a05316404e77/kabeli-i-adaptery',
+    },
 }
 
 # Base prices: (name, citilink_price, dns_price)
@@ -69,6 +85,34 @@ DEMO_PRODUCTS = {
         ('Kingston KC3000 2TB NVMe',      12490, 12990),
         ('Crucial MX500 500GB SATA',       4290,  4490),
         ('Seagate FireCuda 530 2TB NVMe', 14490, 14990),
+    ],
+    'Материнские платы': [
+        ('ASUS ROG STRIX B550-F GAMING',         14990, 15490),
+        ('MSI MAG B660 TOMAHAWK DDR4',            12490, 12990),
+        ('Gigabyte B450M DS3H',                    4990,  5290),
+        ('ASRock X670E Taichi',                   39990, 40990),
+        ('ASUS PRIME Z790-P DDR5',                21990, 22490),
+    ],
+    'Ноутбуки': [
+        ('ASUS VivoBook 15 i5-1235U 16GB',        54990, 55990),
+        ('Lenovo IdeaPad 3 Ryzen 5 16GB',         49990, 50990),
+        ('Acer Nitro 5 i7 RTX 4060',              89990, 91990),
+        ('Apple MacBook Air M2 8GB 256GB',        99990, 101990),
+        ('MSI Katana 15 i7 RTX 4070',            119990, 121990),
+    ],
+    'Сборки ПК': [
+        ('Ryzen 5 5600 + RTX 4060 16GB RAM',      89990,  91990),
+        ('Intel i5-12400F + RX 7600 16GB RAM',    79990,  81990),
+        ('Ryzen 7 7700X + RTX 4070 32GB RAM',    149990, 152990),
+        ('Intel i3-12100F + GTX 1660S 8GB RAM',   49990,  51990),
+        ('Ryzen 9 7900X + RTX 4080 32GB RAM',    249990, 254990),
+    ],
+    'Кабели и провода': [
+        ('Кабель HDMI 2.1 2м Buro',                 590,    690),
+        ('DisplayPort 1.4 1.8м Telecom',             890,    990),
+        ('USB-C — USB-C 1м 100W Baseus',            1290,   1390),
+        ('Патч-корд UTP Cat6 3м Cablexpert',         290,    350),
+        ('Кабель питания ATX 24pin 30см Akasa',      590,    650),
     ],
 }
 
