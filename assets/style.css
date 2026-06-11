@@ -1,83 +1,129 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-body { background: #f0f2f5; margin: 0; }
+body { background: #f0f2f6; margin: 0; }
 
-/* ── Hero ───────────────────────────────────────────── */
+/* ── Hero ─────────────────────────────────────────────────────────── */
 .hero {
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 55%, #24243e 100%);
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 55%, #1a1a3e 100%);
     color: white;
-    padding: 2.2rem 0 2rem;
+    padding: 2.4rem 0 2.2rem;
     margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
 }
-.hero h1  { font-weight: 800; font-size: 1.9rem; letter-spacing: -0.5px; margin: 0 0 .3rem; }
-.hero p   { opacity: .65; font-size: .95rem; margin: 0; }
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,.055) 1px, transparent 1px);
+    background-size: 26px 26px;
+    pointer-events: none;
+}
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: rgba(108,99,255,.18);
+    filter: blur(60px);
+    pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero h1  { font-weight: 800; font-size: 2rem; letter-spacing: -.6px; margin: 0 0 .35rem; }
+.hero .sub { opacity: .55; font-size: .92rem; margin: 0; }
 
-/* ── Stat cards ─────────────────────────────────────── */
+/* ── Stat cards ───────────────────────────────────────────────────── */
 .stat-card {
     background: white;
-    border-radius: 14px;
-    padding: 1.2rem 1.4rem;
-    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    border-radius: 16px;
+    padding: 1.3rem 1.5rem;
+    box-shadow: 0 2px 18px rgba(0,0,0,.07);
     height: 100%;
+    border-left: 4px solid transparent;
+    transition: transform .18s, box-shadow .18s;
+    display: flex; align-items: center; gap: 1rem;
 }
-.stat-card .stat-num {
-    font-size: 2rem; font-weight: 800; color: #1a1a2e; line-height: 1;
-}
-.stat-card .stat-lbl {
-    font-size: .72rem; color: #999; text-transform: uppercase;
-    letter-spacing: .6px; margin-top: .3rem;
-}
-.stat-card .stat-accent { color: #302b63; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,.11); }
+.stat-card.c1 { border-left-color: #6c63ff; }
+.stat-card.c2 { border-left-color: #e85d00; }
+.stat-card.c3 { border-left-color: #005ecb; }
+.stat-card.c4 { border-left-color: #00b09b; }
+.stat-icon { font-size: 1.9rem; opacity: .85; flex-shrink: 0; }
+.stat-num  { font-size: 1.9rem; font-weight: 800; color: #1a1a2e; line-height: 1; }
+.stat-lbl  { font-size: .7rem; color: #aaa; text-transform: uppercase; letter-spacing: .6px; margin-top: .25rem; }
 
-/* ── Section cards ──────────────────────────────────── */
+/* ── Section cards ────────────────────────────────────────────────── */
 .section-card {
     background: white;
-    border-radius: 14px;
-    padding: 1.6rem;
-    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    border-radius: 16px;
+    padding: 1.6rem 1.8rem;
+    box-shadow: 0 2px 18px rgba(0,0,0,.07);
     margin-bottom: 1.5rem;
 }
 .section-title {
     font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin-bottom: 1.1rem;
 }
 
-/* ── Category pills ─────────────────────────────────── */
+/* ── Category pills ───────────────────────────────────────────────── */
 .cat-pill {
     display: inline-block;
     margin: 3px;
-    padding: 5px 14px;
+    padding: 6px 15px;
     border-radius: 20px;
-    border: 1.5px solid #dde1e7;
+    border: 1.5px solid #e0e3ea;
     background: white;
-    color: #555;
+    color: #666;
     font-size: .82rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all .15s;
+    transition: all .18s;
     user-select: none;
 }
-.cat-pill:hover  { border-color: #302b63; color: #302b63; }
-.cat-pill.active { background: #302b63; border-color: #302b63; color: white; }
+.cat-pill:hover { border-color: #6c63ff; color: #6c63ff; background: #f5f4ff; }
+.cat-pill.active {
+    background: linear-gradient(135deg, #302b63, #6c63ff);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 4px 14px rgba(108,99,255,.35);
+}
 
-/* ── Update button ──────────────────────────────────── */
+/* ── Comparison table badges ──────────────────────────────────────── */
+.cheaper-citilink {
+    background: rgba(232,93,0,.1); color: #c44f00;
+    padding: 2px 9px; border-radius: 10px;
+    font-size: .78rem; font-weight: 600; white-space: nowrap;
+}
+.cheaper-dns {
+    background: rgba(0,94,203,.1); color: #0050a8;
+    padding: 2px 9px; border-radius: 10px;
+    font-size: .78rem; font-weight: 600; white-space: nowrap;
+}
+
+/* ── Update button ────────────────────────────────────────────────── */
 .update-btn {
-    background: rgba(255,255,255,.12) !important;
-    border: 1.5px solid rgba(255,255,255,.35) !important;
+    background: rgba(255,255,255,.1) !important;
+    border: 1.5px solid rgba(255,255,255,.28) !important;
     color: white !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
-    padding: .5rem 1.2rem !important;
-    transition: background .15s !important;
+    padding: .55rem 1.4rem !important;
+    font-size: .9rem !important;
+    transition: background .15s, border-color .15s !important;
 }
-.update-btn:hover { background: rgba(255,255,255,.22) !important; }
+.update-btn:hover {
+    background: rgba(255,255,255,.2) !important;
+    border-color: rgba(255,255,255,.5) !important;
+}
 
-/* ── DataTable ──────────────────────────────────────── */
+/* ── DataTable global ─────────────────────────────────────────────── */
 .dash-spreadsheet-container .dash-spreadsheet-inner td,
 .dash-spreadsheet-container .dash-spreadsheet-inner th {
     font-family: 'Inter', sans-serif !important;
     font-size: .875rem !important;
 }
 
-/* ── Dropdown ───────────────────────────────────────── */
-.Select-control, .VirtualizedSelectFocusedOption { border-radius: 10px !important; }
+/* ── Dropdown ─────────────────────────────────────────────────────── */
+.Select-control { border-radius: 10px !important; border-color: #e0e3ea !important; }
+.Select-control:hover { border-color: #6c63ff !important; }

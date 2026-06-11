@@ -96,6 +96,41 @@ def get_product_names() -> list:
     return [r['name'] for r in rows]
 
 
+def get_price_comparison() -> pd.DataFrame:
+    """Pivot table: one row per product, columns Citilink / DNS / cheaper."""
+    conn = get_conn()
+    df = pd.read_sql_query('''
+        SELECT p.name, p.category, p.source, pr.price
+        FROM prices pr
+        JOIN products p ON p.id = pr.product_id
+        WHERE pr.id IN (SELECT MAX(id) FROM prices GROUP BY product_id)
+    ''', conn)
+    conn.close()
+    if df.empty:
+        return pd.DataFrame()
+
+    pivot = df.pivot_table(
+        index=['name', 'category'], columns='source', values='price'
+    ).reset_index()
+    pivot.columns.name = None
+
+    if 'Citilink' in pivot.columns and 'DNS' in pivot.columns:
+        diff = pivot['DNS'] - pivot['Citilink']
+        def _label(d):
+            if pd.isna(d): return '—'
+            d = int(d)
+            if d > 0:   return f'Citilink  −{d:,} ₽'.replace(',', ' ')
+            if d < 0:   return f'DNS  −{-d:,} ₽'.replace(',', ' ')
+            return '='
+        def _store(d):
+            if pd.isna(d): return ''
+            return 'Citilink' if d > 0 else ('DNS' if d < 0 else 'equal')
+        pivot['выгоднее'] = diff.apply(_label)
+        pivot['cheaper_store'] = diff.apply(_store)
+
+    return pivot.sort_values(['category', 'name']).reset_index(drop=True)
+
+
 def has_data() -> bool:
     conn = get_conn()
     count = conn.execute('SELECT COUNT(*) FROM prices').fetchone()[0]
