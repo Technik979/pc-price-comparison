@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+body { background: #f0f2f5; margin: 0; }
+
+/* ── Hero ───────────────────────────────────────────── */
+.hero {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 55%, #24243e 100%);
+    color: white;
+    padding: 2.2rem 0 2rem;
+    margin-bottom: 2rem;
+}
+.hero h1  { font-weight: 800; font-size: 1.9rem; letter-spacing: -0.5px; margin: 0 0 .3rem; }
+.hero p   { opacity: .65; font-size: .95rem; margin: 0; }
+
+/* ── Stat cards ─────────────────────────────────────── */
+.stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    height: 100%;
+}
+.stat-card .stat-num {
+    font-size: 2rem; font-weight: 800; color: #1a1a2e; line-height: 1;
+}
+.stat-card .stat-lbl {
+    font-size: .72rem; color: #999; text-transform: uppercase;
+    letter-spacing: .6px; margin-top: .3rem;
+}
+.stat-card .stat-accent { color: #302b63; }
+
+/* ── Section cards ──────────────────────────────────── */
+.section-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.6rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    margin-bottom: 1.5rem;
+}
+.section-title {
+    font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin-bottom: 1.1rem;
+}
+
+/* ── Category pills ─────────────────────────────────── */
+.cat-pill {
+    display: inline-block;
+    margin: 3px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid #dde1e7;
+    background: white;
+    color: #555;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+}
+.cat-pill:hover  { border-color: #302b63; color: #302b63; }
+.cat-pill.active { background: #302b63; border-color: #302b63; color: white; }
+
+/* ── Update button ──────────────────────────────────── */
+.update-btn {
+    background: rgba(255,255,255,.12) !important;
+    border: 1.5px solid rgba(255,255,255,.35) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    padding: .5rem 1.2rem !important;
+    transition: background .15s !important;
+}
+.update-btn:hover { background: rgba(255,255,255,.22) !important; }
+
+/* ── DataTable ──────────────────────────────────────── */
+.dash-spreadsheet-container .dash-spreadsheet-inner td,
+.dash-spreadsheet-container .dash-spreadsheet-inner th {
+    font-family: 'Inter', sans-serif !important;
+    font-size: .875rem !important;
+}
+
+/* ── Dropdown ───────────────────────────────────────── */
+.Select-control, .VirtualizedSelectFocusedOption { border-radius: 10px !important; }
