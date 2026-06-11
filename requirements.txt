@@ -1,6 +1,7 @@
-requests
-beautifulsoup4
-pandas
-plotly
-dash
-dash-bootstrap-components
+Django>=4.2,<5.0
+djangorestframework>=3.14
+pandas>=2.0
+plotly>=5.18
+python-dotenv>=1.0
+requests>=2.31
+beautifulsoup4>=4.12

@@ -1,0 +1,161 @@
+{% extends 'monitor/base.html' %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+  <div class="container py-2">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <h1 class="display-5 fw-800 mb-2">🖥️ PC Price Monitor</h1>
+        <p class="lead mb-4" style="opacity:.7">
+          Сравниваем цены Citilink и DNS на {{ total_components }} комплектующих.
+          Находим выгоду и отслеживаем динамику.
+        </p>
+        <a href="{% url 'catalog' %}" class="btn btn-light btn-lg px-4 me-2 fw-600">
+          Перейти к каталогу →
+        </a>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg px-4">
+          Создать аккаунт
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container-fluid px-4">
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card c1">
+        <div class="stat-icon">📦</div>
+        <div>
+          <div class="stat-num">{{ total_components }}</div>
+          <div class="stat-lbl">товаров</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card c2">
+        <div class="stat-icon">📂</div>
+        <div>
+          <div class="stat-num">{{ categories|length }}</div>
+          <div class="stat-lbl">категорий</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card c3">
+        <div class="stat-icon">🏪</div>
+        <div>
+          <div class="stat-num">2</div>
+          <div class="stat-lbl">магазина</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card c4">
+        <div class="stat-icon">💰</div>
+        <div>
+          {% if global_min_price %}
+          <div class="stat-num" style="font-size:1.3rem">
+            от {{ global_min_price|floatformat:0 }} ₽
+          </div>
+          {% endif %}
+          <div class="stat-lbl">мин. цена</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories grid -->
+  <div class="section-card mb-4">
+    <div class="section-title">Категории</div>
+    <div class="row g-3">
+      {% for cat in categories %}
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <a href="{% url 'catalog' %}?cat={{ cat.slug }}" class="cat-card text-decoration-none">
+          <div class="cat-card-icon">{{ cat.icon }}</div>
+          <div class="cat-card-name">{{ cat.name }}</div>
+          <div class="cat-card-count">{{ cat.cnt }} товаров</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Top deals -->
+  {% if top_deals %}
+  <div class="section-card mb-4">
+    <div class="section-title">🔥 Лучшие предложения</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Товар</th>
+            <th>Категория</th>
+            <th class="text-end" style="color:#e85d00">Citilink</th>
+            <th class="text-end" style="color:#005ecb">DNS</th>
+            <th class="text-end">Экономия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for deal in top_deals %}
+          <tr>
+            <td>
+              <a href="{% url 'component_detail' deal.component.id %}" class="fw-500 text-decoration-none text-dark">
+                {{ deal.component.name }}
+              </a>
+            </td>
+            <td><span class="badge-cat">{{ deal.component.category.icon }} {{ deal.component.category.name }}</span></td>
+            <td class="text-end fw-700" style="color:#e85d00">{{ deal.component.citilink_price|floatformat:0 }} ₽</td>
+            <td class="text-end fw-700" style="color:#005ecb">{{ deal.component.dns_price|floatformat:0 }} ₽</td>
+            <td class="text-end">
+              <span class="badge bg-success bg-opacity-10 text-success fw-600">−{{ deal.savings|floatformat:0 }} ₽</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Pandas analytics table -->
+  {% if cat_stats %}
+  <div class="section-card mb-4">
+    <div class="section-title">📊 Аналитика цен по категориям</div>
+    <p class="text-muted small mb-3">Рассчитано с помощью Pandas по всей истории цен</p>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Категория</th>
+            <th class="text-end">Средняя цена</th>
+            <th class="text-end">Минимум</th>
+            <th class="text-end">Максимум</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in cat_stats %}
+          <tr>
+            <td>
+              <a href="{% url 'catalog' %}?cat={{ s.name|lower }}" class="text-decoration-none text-dark fw-500">
+                {{ s.icon }} {{ s.name }}
+              </a>
+            </td>
+            <td class="text-end">{{ s.avg|floatformat:0 }} ₽</td>
+            <td class="text-end text-success fw-600">{{ s.min_p|floatformat:0 }} ₽</td>
+            <td class="text-end text-muted">{{ s.max_p|floatformat:0 }} ₽</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

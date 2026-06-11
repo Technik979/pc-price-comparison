@@ -1,0 +1,245 @@
+/* ======= PC Price Monitor — main stylesheet ======= */
+
+:root {
+  --purple-dark: #2d1b69;
+  --purple-mid:  #4a2d9c;
+  --purple-light:#7c5cbf;
+  --accent:      #a78bfa;
+  --citilink:    #e85d00;
+  --dns:         #005ecb;
+  --bg:          #f4f3f8;
+  --card-bg:     #ffffff;
+  --text:        #1a1a2e;
+  --text-muted:  #6b7280;
+  --border:      #e8e4f3;
+  --radius:      12px;
+  --shadow:      0 2px 8px rgba(45,27,105,.08);
+  --shadow-lg:   0 4px 20px rgba(45,27,105,.14);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ---- Navbar ---- */
+.site-nav {
+  background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple-mid) 100%);
+  border-bottom: 2px solid var(--purple-light);
+  box-shadow: 0 2px 12px rgba(45,27,105,.3);
+  padding: .6rem 1.5rem;
+}
+.site-nav .navbar-brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff !important;
+  letter-spacing: -.3px;
+}
+.site-nav .navbar-brand span { color: var(--accent); }
+.site-nav .nav-link {
+  color: rgba(255,255,255,.8) !important;
+  font-weight: 500;
+  padding: .4rem .8rem;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.site-nav .nav-link:hover,
+.site-nav .nav-link.active {
+  background: rgba(255,255,255,.15);
+  color: #fff !important;
+}
+.site-nav .btn-nav-auth {
+  border: 1.5px solid rgba(255,255,255,.5);
+  color: #fff !important;
+  border-radius: 7px;
+  padding: .35rem .9rem;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.site-nav .btn-nav-auth:hover {
+  background: rgba(255,255,255,.2);
+}
+.site-nav .nav-user {
+  color: rgba(255,255,255,.7);
+  font-size: .85rem;
+}
+
+/* ---- Hero ---- */
+.hero {
+  background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple-mid) 60%, var(--purple-light) 100%);
+  padding: 3.5rem 2rem 3rem;
+  text-align: center;
+  color: #fff;
+}
+.hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  margin-bottom: .5rem;
+}
+.hero h1 span { color: var(--accent); }
+.hero p { color: rgba(255,255,255,.8); font-size: 1.05rem; max-width: 520px; margin: 0 auto 1.5rem; }
+.hero .btn-hero {
+  background: var(--accent);
+  color: var(--purple-dark);
+  font-weight: 700;
+  border: none;
+  padding: .7rem 1.8rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: opacity .15s;
+}
+.hero .btn-hero:hover { opacity: .85; }
+
+/* ---- Stat cards ---- */
+.stat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem 1.2rem;
+  text-align: center;
+  border-top: 4px solid var(--purple-light);
+}
+.stat-card .stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--purple-mid);
+  line-height: 1.1;
+}
+.stat-card .stat-lbl {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin-top: .2rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ---- Section card ---- */
+.section-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--purple-dark);
+  margin-bottom: 1rem;
+  padding-bottom: .6rem;
+  border-bottom: 2px solid var(--border);
+}
+
+/* ---- Category grid cards ---- */
+.cat-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: box-shadow .15s, border-color .15s, transform .12s;
+  display: block;
+}
+.cat-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--purple-light);
+  transform: translateY(-2px);
+  color: var(--purple-dark);
+}
+.cat-card .cat-icon { font-size: 2rem; line-height: 1; }
+.cat-card .cat-name { font-weight: 600; font-size: .9rem; margin-top: .5rem; }
+.cat-card .cat-count { font-size: .78rem; color: var(--text-muted); }
+
+/* ---- Category pills ---- */
+.cat-pill {
+  display: inline-block;
+  padding: .35rem .85rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: .82rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin: .2rem .1rem;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.cat-pill:hover, .cat-pill.active {
+  background: var(--purple-mid);
+  border-color: var(--purple-mid);
+  color: #fff;
+}
+
+/* ---- Badge category ---- */
+.badge-cat {
+  display: inline-block;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  background: #ede9fa;
+  color: var(--purple-mid);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+/* ---- Cheaper tag ---- */
+.cheaper-tag {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 5px;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.cheaper-tag.citilink { background: #fff0e8; color: var(--citilink); }
+.cheaper-tag.dns      { background: #e6f0ff; color: var(--dns); }
+
+/* ---- Table tweaks ---- */
+.table th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.table td { vertical-align: middle; }
+
+/* ---- Price block ---- */
+.price-block .price-row { display: flex; justify-content: space-between; align-items: center; }
+.price-block .store-label { font-weight: 700; font-size: .95rem; }
+.price-block .price-val   { font-size: 1.4rem; font-weight: 800; }
+
+/* ---- Auth forms ---- */
+.section-card input.form-control,
+.section-card input[type="number"],
+.section-card input[type="text"],
+.section-card input[type="password"] {
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  padding: .5rem .8rem;
+}
+.section-card input.form-control:focus {
+  border-color: var(--purple-light);
+  box-shadow: 0 0 0 3px rgba(124,92,191,.15);
+}
+
+/* ---- Utilities ---- */
+.fw-500 { font-weight: 500 !important; }
+.fw-600 { font-weight: 600 !important; }
+.fw-700 { font-weight: 700 !important; }
+
+/* ---- Buttons ---- */
+.btn-primary {
+  background: var(--purple-mid);
+  border-color: var(--purple-mid);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--purple-dark);
+  border-color: var(--purple-dark);
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f0edf8; }
+::-webkit-scrollbar-thumb { background: var(--purple-light); border-radius: 3px; }
+
+/* ---- Search input id ---- */
+#search-input { border-radius: 8px 0 0 8px !important; }

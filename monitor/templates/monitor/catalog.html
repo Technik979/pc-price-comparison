@@ -1,0 +1,166 @@
+{% extends 'monitor/base.html' %}
+{% block title %}Каталог — PC Price Monitor{% endblock %}
+{% block nav_catalog %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <div class="section-card mb-4">
+    <div class="section-title">Каталог комплектующих</div>
+
+    <!-- Search -->
+    <form method="get" action="{% url 'catalog' %}" class="mb-3" id="search-form">
+      {% if active_category %}
+        <input type="hidden" name="cat" value="{{ active_category.slug }}">
+      {% endif %}
+      <div class="input-group" style="max-width:420px">
+        {{ search_form.q }}
+        <button class="btn btn-primary px-3" type="submit">Найти</button>
+        {% if query %}
+        <a href="{% url 'catalog' %}{% if active_category %}?cat={{ active_category.slug }}{% endif %}"
+           class="btn btn-outline-secondary">✕</a>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- Category pills -->
+    <div class="mb-3">
+      <a href="{% url 'catalog' %}{% if query %}?q={{ query }}{% endif %}"
+         class="cat-pill {% if not active_category %}active{% endif %}">🔍 Все</a>
+      {% for cat in categories %}
+      <a href="{% url 'catalog' %}?cat={{ cat.slug }}{% if query %}&q={{ query }}{% endif %}"
+         class="cat-pill {% if active_category.slug == cat.slug %}active{% endif %}">
+        {{ cat.icon }} {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="catalog-table">
+        <thead class="table-light">
+          <tr>
+            <th>Товар</th>
+            {% if not active_category %}<th>Категория</th>{% endif %}
+            {% if show_specs %}<th>Характеристики</th>{% endif %}
+            <th class="text-end" style="color:#e85d00">Citilink, ₽</th>
+            <th class="text-end" style="color:#005ecb">DNS, ₽</th>
+            <th>Выгоднее</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="catalog-body">
+          {% for row in rows %}
+          <tr>
+            <td>
+              <a href="{% url 'component_detail' row.component.id %}"
+                 class="fw-500 text-decoration-none text-dark">{{ row.component.name }}</a>
+            </td>
+            {% if not active_category %}
+            <td><span class="badge-cat">{{ row.component.category.icon }} {{ row.component.category.name }}</span></td>
+            {% endif %}
+            {% if show_specs %}
+            <td class="text-muted small" style="max-width:260px">{{ row.component.specs }}</td>
+            {% endif %}
+            <td class="text-end fw-700" style="color:#e85d00">
+              {% if row.citilink %}{{ row.citilink|floatformat:0 }}{% else %}—{% endif %}
+            </td>
+            <td class="text-end fw-700" style="color:#005ecb">
+              {% if row.dns %}{{ row.dns|floatformat:0 }}{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if row.cheaper_store == 'citilink' %}
+                <span class="cheaper-tag citilink">{{ row.cheaper }}</span>
+              {% elif row.cheaper_store == 'dns' %}
+                <span class="cheaper-tag dns">{{ row.cheaper }}</span>
+              {% else %}
+                <span class="text-muted">{{ row.cheaper }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.is_authenticated %}
+                {% if row.in_watchlist %}
+                  <a href="{% url 'watchlist' %}" class="btn btn-sm btn-success px-2">⭐</a>
+                {% else %}
+                  <a href="{% url 'component_detail' row.component.id %}"
+                     class="btn btn-sm btn-outline-secondary px-2">+ список</a>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Ничего не найдено</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="text-muted small mt-2">Найдено: <span id="count">{{ rows|length }}</span> товаров</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const input = document.getElementById('search-input');
+  const body  = document.getElementById('catalog-body');
+  const count = document.getElementById('count');
+  const catSlug = '{{ active_category.slug|default:"" }}';
+  const showSpecs = {{ show_specs|lower }};
+  const showCat   = {% if not active_category %}true{% else %}false{% endif %};
+
+  let timer;
+
+  function fmt(n) { return n ? n.toLocaleString('ru-RU') : '—'; }
+
+  function cheaper(c, d) {
+    if (!c || !d) return ['', ''];
+    const diff = d - c;
+    if (diff > 0) return [`Citilink −${(diff).toLocaleString('ru-RU')} ₽`, 'citilink'];
+    if (diff < 0) return [`DNS −${(-diff).toLocaleString('ru-RU')} ₽`, 'dns'];
+    return ['=', ''];
+  }
+
+  function renderRows(results) {
+    if (!results.length) {
+      body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Ничего не найдено</td></tr>';
+      count.textContent = '0';
+      return;
+    }
+    body.innerHTML = results.map(r => {
+      const [label, store] = cheaper(r.citilink, r.dns);
+      const cheaperHtml = store
+        ? `<span class="cheaper-tag ${store}">${label}</span>`
+        : `<span class="text-muted">${label}</span>`;
+      const catCell = showCat ? `<td><span class="badge-cat">${r.category}</span></td>` : '';
+      const specsCell = showSpecs ? `<td class="text-muted small" style="max-width:260px">${r.specs || ''}</td>` : '';
+      return `<tr>
+        <td><a href="/component/${r.id}/" class="fw-500 text-decoration-none text-dark">${r.name}</a></td>
+        ${catCell}
+        ${specsCell}
+        <td class="text-end fw-700" style="color:#e85d00">${fmt(r.citilink)}</td>
+        <td class="text-end fw-700" style="color:#005ecb">${fmt(r.dns)}</td>
+        <td>${cheaperHtml}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+    count.textContent = results.length;
+  }
+
+  if (input) {
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = input.value.trim();
+        const url = `/api/search/?q=${encodeURIComponent(q)}&cat=${catSlug}`;
+        fetch(url)
+          .then(r => r.json())
+          .then(data => renderRows(data.results))
+          .catch(() => {});
+      }, 280);
+    });
+  }
+})();
+</script>
+{% endblock %}

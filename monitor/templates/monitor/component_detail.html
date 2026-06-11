@@ -1,0 +1,118 @@
+{% extends 'monitor/base.html' %}
+{% block title %}{{ component.name }} — PC Price Monitor{% endblock %}
+{% block nav_catalog %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'index' %}">Главная</a></li>
+      <li class="breadcrumb-item">
+        <a href="{% url 'catalog' %}?cat={{ component.category.slug }}">{{ component.category.name }}</a>
+      </li>
+      <li class="breadcrumb-item active">{{ component.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+
+    <!-- Left: info + prices -->
+    <div class="col-lg-4">
+      <div class="section-card h-100">
+        <div class="mb-1">
+          <span class="badge-cat">{{ component.category.icon }} {{ component.category.name }}</span>
+        </div>
+        <h2 class="h5 fw-700 mt-2 mb-3">{{ component.name }}</h2>
+
+        {% if component.specs %}
+        <p class="text-muted small mb-3">{{ component.specs }}</p>
+        {% endif %}
+
+        <!-- Price comparison -->
+        <div class="price-block mb-3">
+          {% if citilink_price %}
+          <div class="price-row citilink-row">
+            <span class="store-label" style="color:#e85d00">Citilink</span>
+            <span class="price-val" style="color:#e85d00">{{ citilink_price|floatformat:0 }} ₽</span>
+          </div>
+          {% endif %}
+          {% if dns_price %}
+          <div class="price-row dns-row mt-2">
+            <span class="store-label" style="color:#005ecb">DNS</span>
+            <span class="price-val" style="color:#005ecb">{{ dns_price|floatformat:0 }} ₽</span>
+          </div>
+          {% endif %}
+          {% if citilink_price and dns_price %}
+          <div class="mt-3 p-2 rounded" style="background:#f8f9fb">
+            {% if citilink_price < dns_price %}
+            <small class="fw-600" style="color:#c44f00">
+              Citilink выгоднее на {{ dns_price|add:"-"|add:citilink_price|floatformat:0 }} ₽
+            </small>
+            {% elif dns_price < citilink_price %}
+            <small class="fw-600" style="color:#0050a8">
+              DNS выгоднее
+            </small>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Watchlist -->
+        {% if user.is_authenticated %}
+          {% if in_watchlist %}
+          <div class="alert alert-success py-2 mb-2 small">
+            ⭐ В вашем списке отслеживания
+            {% if watchlist_entry.target_price %}
+            · цель: {{ watchlist_entry.target_price|floatformat:0 }} ₽
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'remove_from_watchlist' component.id %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm w-100 mb-2">Удалить из списка</button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'add_to_watchlist' component.id %}">
+            {% csrf_token %}
+            <div class="mb-2">
+              {% if watchlist_form %}
+              {{ watchlist_form.target_price.label_tag }}
+              {{ watchlist_form.target_price }}
+              {% endif %}
+            </div>
+            <button class="btn btn-primary w-100">⭐ Добавить в список отслеживания</button>
+          </form>
+          {% endif %}
+        {% else %}
+        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-primary w-100">
+          Войдите, чтобы отслеживать цену
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: chart -->
+    <div class="col-lg-8">
+      <div class="section-card">
+        <div class="section-title">Динамика цены за 30 дней</div>
+        {% if plotly_json %}
+        <div id="price-chart" style="height:380px"></div>
+        {% else %}
+        <p class="text-muted">Нет данных для графика.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if plotly_json %}
+<script>
+  const fig = {{ plotly_json|safe }};
+  Plotly.newPlot('price-chart', fig.data, fig.layout, {responsive: true, displayModeBar: false});
+</script>
+{% endif %}
+{% endblock %}
