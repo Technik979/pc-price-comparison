@@ -1,3 +1,4 @@
+import re
 import random
 import logging
 
@@ -11,6 +12,37 @@ import db as database
 import scraper
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+
+
+def _parse_laptop(specs: str) -> dict:
+    """Extract display size, RAM GB, CPU brand, SSD GB from a specs string."""
+    out = {'display': None, 'ram': None, 'cpu_brand': None, 'ssd': None}
+    if not specs:
+        return out
+    parts = [p.strip() for p in specs.split('·')]
+    m = re.search(r'(\d+(?:\.\d+)?)"', parts[0] if parts else '')
+    if m:
+        out['display'] = float(m.group(1))
+    cpu_part = parts[1] if len(parts) > 1 else ''
+    if 'Intel' in cpu_part:
+        out['cpu_brand'] = 'Intel'
+    elif 'AMD' in cpu_part:
+        out['cpu_brand'] = 'AMD'
+    elif 'Apple' in cpu_part:
+        out['cpu_brand'] = 'Apple'
+    ram_part = parts[2] if len(parts) > 2 else ''
+    m = re.search(r'(\d+)GB', ram_part)
+    if m:
+        out['ram'] = int(m.group(1))
+    ssd_part = parts[3] if len(parts) > 3 else ''
+    m = re.search(r'(\d+)TB', ssd_part)
+    if m:
+        out['ssd'] = int(m.group(1)) * 1024
+    else:
+        m = re.search(r'(\d+)GB', ssd_part)
+        if m:
+            out['ssd'] = int(m.group(1))
+    return out
 
 database.init_db()
 if not database.has_data():
@@ -118,6 +150,50 @@ app.layout = html.Div([
                 for c in CATEGORIES
             ], className='mb-3'),
 
+            # Laptop filters (visible only when Ноутбуки is selected)
+            html.Div(id='laptop-filter-row', children=[
+                html.Div('Фильтры:', style={
+                    'fontSize': '.75rem', 'fontWeight': '600',
+                    'color': '#aaa', 'textTransform': 'uppercase',
+                    'letterSpacing': '.5px', 'marginBottom': '8px',
+                }),
+                dbc.Row([
+                    dbc.Col(dcc.Dropdown(
+                        id='f-display', placeholder='Диагональ',
+                        options=[
+                            {'label': '≤ 14"',  'value': '14'},
+                            {'label': '15.6"',  'value': '15.6'},
+                            {'label': '16"+',   'value': '16'},
+                        ], clearable=True,
+                    ), md=3, xs=6, className='mb-2'),
+                    dbc.Col(dcc.Dropdown(
+                        id='f-ram', placeholder='RAM',
+                        options=[
+                            {'label': '8 ГБ',  'value': 8},
+                            {'label': '16 ГБ', 'value': 16},
+                            {'label': '18 ГБ', 'value': 18},
+                            {'label': '32 ГБ', 'value': 32},
+                        ], clearable=True,
+                    ), md=3, xs=6, className='mb-2'),
+                    dbc.Col(dcc.Dropdown(
+                        id='f-cpu', placeholder='Процессор',
+                        options=[
+                            {'label': 'Intel', 'value': 'Intel'},
+                            {'label': 'AMD',   'value': 'AMD'},
+                            {'label': 'Apple', 'value': 'Apple'},
+                        ], clearable=True,
+                    ), md=3, xs=6, className='mb-2'),
+                    dbc.Col(dcc.Dropdown(
+                        id='f-ssd', placeholder='SSD',
+                        options=[
+                            {'label': '256 ГБ', 'value': 256},
+                            {'label': '512 ГБ', 'value': 512},
+                            {'label': '1 ТБ+',  'value': 1024},
+                        ], clearable=True,
+                    ), md=3, xs=6, className='mb-2'),
+                ], className='g-2'),
+            ], style={'display': 'none'}, className='mb-3'),
+
             dash_table.DataTable(
                 id='prices-table',
                 columns=[
@@ -213,6 +289,16 @@ def switch_category(_, ids):
 
 
 @app.callback(
+    Output('laptop-filter-row', 'style'),
+    Input('active-cat', 'data'),
+)
+def toggle_laptop_filters(category):
+    if category == 'Ноутбуки':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
     Output('prices-table', 'data'),
     Output('prices-table', 'columns'),
     Output('product-select', 'options'),
@@ -221,8 +307,12 @@ def switch_category(_, ids):
     Output('stat-min', 'children'),
     Input('active-cat', 'data'),
     Input('refresh-trigger', 'data'),
+    Input('f-display', 'value'),
+    Input('f-ram', 'value'),
+    Input('f-cpu', 'value'),
+    Input('f-ssd', 'value'),
 )
-def update_table(category, _):
+def update_table(category, _, f_display, f_ram, f_cpu, f_ssd):
     df = database.get_price_comparison()
     if df.empty:
         cols = [{'name': c, 'id': c} for c in ['name', 'category', 'Citilink', 'DNS', 'выгоднее']]
@@ -240,7 +330,40 @@ def update_table(category, _):
     if category != 'Все':
         df = df[df['category'] == category]
 
-    # Build columns dynamically (DNS/Citilink may not exist if only one source)
+    # Apply laptop filters
+    if category == 'Ноутбуки' and 'specs' in df.columns:
+        parsed = df['specs'].apply(_parse_laptop)
+        if f_display:
+            def _match_display(p):
+                d = p['display']
+                if d is None:
+                    return False
+                if f_display == '14':
+                    return d < 15
+                if f_display == '15.6':
+                    return d == 15.6
+                if f_display == '16':
+                    return d >= 16
+                return True
+            df = df[parsed.apply(_match_display)]
+            parsed = df['specs'].apply(_parse_laptop)
+        if f_ram:
+            df = df[parsed.apply(lambda p: p['ram'] == f_ram)]
+            parsed = df['specs'].apply(_parse_laptop)
+        if f_cpu:
+            df = df[parsed.apply(lambda p: p['cpu_brand'] == f_cpu)]
+            parsed = df['specs'].apply(_parse_laptop)
+        if f_ssd:
+            def _match_ssd(p):
+                s = p['ssd']
+                if s is None:
+                    return False
+                if f_ssd == 1024:
+                    return s >= 1024
+                return s == f_ssd
+            df = df[parsed.apply(_match_ssd)]
+
+    # Build columns dynamically
     present_sources = [c for c in ('Citilink', 'DNS') if c in df.columns]
     show_specs = (category == 'Ноутбуки')
     columns = [

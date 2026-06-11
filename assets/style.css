@@ -127,3 +127,12 @@ body { background: #f0f2f6; margin: 0; }
 /* ── Dropdown ─────────────────────────────────────────────────────── */
 .Select-control { border-radius: 10px !important; border-color: #e0e3ea !important; }
 .Select-control:hover { border-color: #6c63ff !important; }
+
+/* ── Laptop filter chips ──────────────────────────────────────────── */
+#laptop-filter-row .Select-control {
+    border-radius: 8px !important;
+    font-size: .82rem !important;
+    min-height: 34px !important;
+}
+#laptop-filter-row .Select-placeholder { font-size: .82rem !important; }
+#laptop-filter-row .VirtualizedSelectOption { font-size: .82rem !important; }
