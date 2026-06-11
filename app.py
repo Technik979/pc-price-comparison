@@ -242,16 +242,17 @@ def update_table(category, _):
 
     # Build columns dynamically (DNS/Citilink may not exist if only one source)
     present_sources = [c for c in ('Citilink', 'DNS') if c in df.columns]
+    show_specs = (category == 'Ноутбуки')
     columns = [
         {'name': 'Товар',     'id': 'name'},
         {'name': 'Категория', 'id': 'category'},
+        *([{'name': 'Характеристики', 'id': 'specs'}] if show_specs else []),
         *[{'name': f'{s}, ₽', 'id': s, 'type': 'numeric'} for s in present_sources],
         {'name': 'Выгоднее',  'id': 'выгоднее'},
     ]
 
-    hidden_cols = [{'name': 'cheaper_store', 'id': 'cheaper_store'}]
-    show_cols   = ['name', 'category'] + present_sources + ['выгоднее', 'cheaper_store']
-    records     = df[[c for c in show_cols if c in df.columns]].to_dict('records')
+    show_cols = ['name', 'category'] + (['specs'] if show_specs else []) + present_sources + ['выгоднее', 'cheaper_store']
+    records   = df[[c for c in show_cols if c in df.columns]].to_dict('records')
 
     options = [{'label': f'{CAT_ICONS.get(row["category"], "")} {row["name"]}',
                 'value': row['name']}

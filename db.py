@@ -17,11 +17,12 @@ def init_db():
     conn = get_conn()
     conn.executescript('''
         CREATE TABLE IF NOT EXISTS products (
-            id      INTEGER PRIMARY KEY AUTOINCREMENT,
-            name    TEXT NOT NULL,
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            name     TEXT NOT NULL,
             category TEXT NOT NULL,
-            url     TEXT DEFAULT '',
-            source  TEXT NOT NULL,
+            url      TEXT DEFAULT '',
+            source   TEXT NOT NULL,
+            specs    TEXT DEFAULT '',
             UNIQUE(name, source)
         );
         CREATE TABLE IF NOT EXISTS prices (
@@ -37,12 +38,16 @@ def init_db():
     conn.close()
 
 
-def upsert_product(name: str, category: str, url: str, source: str) -> int:
+def upsert_product(name: str, category: str, url: str, source: str, specs: str = '') -> int:
     conn = get_conn()
-    conn.execute(
-        'INSERT OR IGNORE INTO products (name, category, url, source) VALUES (?, ?, ?, ?)',
-        (name, category, url, source),
-    )
+    conn.execute('''
+        INSERT INTO products (name, category, url, source, specs)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(name, source) DO UPDATE SET
+            category = excluded.category,
+            url      = excluded.url,
+            specs    = excluded.specs
+    ''', (name, category, url, source, specs))
     conn.commit()
     row = conn.execute(
         'SELECT id FROM products WHERE name = ? AND source = ?', (name, source)
@@ -63,17 +68,40 @@ def add_price(product_id: int, price: int, scraped_at: str = None):
     conn.close()
 
 
-def get_latest_prices() -> pd.DataFrame:
+def get_price_comparison() -> pd.DataFrame:
     conn = get_conn()
     df = pd.read_sql_query('''
-        SELECT p.name, p.category, p.source, p.url, pr.price, pr.scraped_at
+        SELECT p.name, p.category, p.source, pr.price, p.specs
         FROM prices pr
         JOIN products p ON p.id = pr.product_id
         WHERE pr.id IN (SELECT MAX(id) FROM prices GROUP BY product_id)
-        ORDER BY p.category, p.name, p.source
     ''', conn)
     conn.close()
-    return df
+    if df.empty:
+        return pd.DataFrame()
+
+    specs_map = df.groupby('name')['specs'].first()
+
+    pivot = df.pivot_table(
+        index=['name', 'category'], columns='source', values='price'
+    ).reset_index()
+    pivot.columns.name = None
+    pivot['specs'] = pivot['name'].map(specs_map)
+
+    if 'Citilink' in pivot.columns and 'DNS' in pivot.columns:
+        diff = pivot['DNS'] - pivot['Citilink']
+        def _label(d):
+            if pd.isna(d): return '—'
+            d = int(d)
+            if d > 0:  return f'Citilink  −{d:,} ₽'.replace(',', ' ')
+            if d < 0:  return f'DNS  −{-d:,} ₽'.replace(',', ' ')
+            return '='
+        pivot['выгоднее']     = diff.apply(_label)
+        pivot['cheaper_store'] = diff.apply(
+            lambda d: '' if pd.isna(d) else ('Citilink' if d > 0 else ('DNS' if d < 0 else 'equal'))
+        )
+
+    return pivot.sort_values(['category', 'name']).reset_index(drop=True)
 
 
 def get_price_history(product_name: str) -> pd.DataFrame:
@@ -94,41 +122,6 @@ def get_product_names() -> list:
     rows = conn.execute('SELECT DISTINCT name FROM products ORDER BY name').fetchall()
     conn.close()
     return [r['name'] for r in rows]
-
-
-def get_price_comparison() -> pd.DataFrame:
-    """Pivot table: one row per product, columns Citilink / DNS / cheaper."""
-    conn = get_conn()
-    df = pd.read_sql_query('''
-        SELECT p.name, p.category, p.source, pr.price
-        FROM prices pr
-        JOIN products p ON p.id = pr.product_id
-        WHERE pr.id IN (SELECT MAX(id) FROM prices GROUP BY product_id)
-    ''', conn)
-    conn.close()
-    if df.empty:
-        return pd.DataFrame()
-
-    pivot = df.pivot_table(
-        index=['name', 'category'], columns='source', values='price'
-    ).reset_index()
-    pivot.columns.name = None
-
-    if 'Citilink' in pivot.columns and 'DNS' in pivot.columns:
-        diff = pivot['DNS'] - pivot['Citilink']
-        def _label(d):
-            if pd.isna(d): return '—'
-            d = int(d)
-            if d > 0:   return f'Citilink  −{d:,} ₽'.replace(',', ' ')
-            if d < 0:   return f'DNS  −{-d:,} ₽'.replace(',', ' ')
-            return '='
-        def _store(d):
-            if pd.isna(d): return ''
-            return 'Citilink' if d > 0 else ('DNS' if d < 0 else 'equal')
-        pivot['выгоднее'] = diff.apply(_label)
-        pivot['cheaper_store'] = diff.apply(_store)
-
-    return pivot.sort_values(['category', 'name']).reset_index(drop=True)
 
 
 def has_data() -> bool:
