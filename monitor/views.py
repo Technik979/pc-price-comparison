@@ -280,6 +280,86 @@ def add_component(request):
         form = AddComponentForm()
     return render(request, 'monitor/add_component.html', {'form': form})
 
+@login_required
+def profile_view(request):
+    from django.utils import timezone
+
+    items = Watchlist.objects.filter(user=request.user).select_related('component__category').order_by('-added_at')
+
+    enriched = []
+    total_savings = 0
+    target_reached_count = 0
+    categories_seen = set()
+
+    for item in items:
+        prices = {s: item.component.get_latest_price(s) for s in ALL_STORES}
+        valid = {k: v for k, v in prices.items() if v}
+        best_store = min(valid, key=valid.get) if valid else None
+        best_price = valid[best_store] if best_store else None
+        worst_price = max(valid.values()) if valid else None
+        savings = (worst_price - best_price) if (best_price and worst_price) else 0
+        total_savings += savings
+        target_ok = bool(item.target_price and best_price and best_price <= item.target_price)
+        if target_ok:
+            target_reached_count += 1
+        categories_seen.add(item.component.category.name)
+        enriched.append({
+            'item': item,
+            'prices': prices,
+            'best_store': best_store,
+            'best_price': best_price,
+            'savings': savings,
+            'target_ok': target_ok,
+        })
+
+    enriched.sort(key=lambda x: (-int(x['target_ok']), -(x['savings'] or 0)))
+
+    days_joined = (timezone.now() - request.user.date_joined).days
+
+    # Grouped bar chart — price per store for each watchlist item (max 12)
+    chart_json = None
+    if enriched:
+        to_show = enriched[:12]
+        labels = []
+        for row in to_show:
+            n = row['item'].component.name
+            labels.append(n[:22] + '…' if len(n) > 22 else n)
+
+        fig = go.Figure()
+        for store in ALL_STORES:
+            fig.add_trace(go.Bar(
+                name=store,
+                x=labels,
+                y=[row['prices'].get(store) for row in to_show],
+                marker_color=STORE_COLORS[store],
+                hovertemplate='<b>%{y:,.0f} ₽</b><extra>' + store + '</extra>',
+            ))
+        fig.update_layout(
+            barmode='group',
+            yaxis_title='Цена, ₽',
+            yaxis_tickformat=',d',
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            legend=dict(orientation='h', y=1.08, x=0),
+            margin=dict(t=10, b=10, l=10, r=10),
+            font=dict(family='Inter, sans-serif', size=11, color='#555'),
+        )
+        fig.update_xaxes(showgrid=False)
+        fig.update_yaxes(showgrid=True, gridcolor='#f0f0f0', zeroline=False)
+        chart_json = fig.to_json()
+
+    return render(request, 'monitor/profile.html', {
+        'enriched': enriched,
+        'total_savings': total_savings,
+        'target_reached_count': target_reached_count,
+        'categories_count': len(categories_seen),
+        'days_joined': days_joined,
+        'ALL_STORES': ALL_STORES,
+        'STORE_COLORS': STORE_COLORS,
+        'chart_json': chart_json,
+    })
+
+
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('index')

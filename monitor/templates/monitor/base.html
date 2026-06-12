@@ -31,7 +31,12 @@
       </ul>
       <ul class="navbar-nav gap-1">
         {% if user.is_authenticated %}
-          <li class="nav-item"><span class="nav-link text-muted small">{{ user.username }}</span></li>
+          <li class="nav-item">
+            <a class="nav-link {% block nav_profile %}{% endblock %}" href="{% url 'profile' %}"
+               style="font-weight:600">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.22);font-size:.72rem;margin-right:.35rem">{{ user.username|slice:":1"|upper }}</span>{{ user.username }}
+            </a>
+          </li>
           <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Выйти</a></li>
         {% else %}
           <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Войти</a></li>

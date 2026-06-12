@@ -8,6 +8,7 @@ urlpatterns = [
     path('watchlist/', views.watchlist_view, name='watchlist'),
     path('watchlist/add/<int:component_id>/', views.add_to_watchlist, name='add_to_watchlist'),
     path('watchlist/remove/<int:component_id>/', views.remove_from_watchlist, name='remove_from_watchlist'),
+    path('profile/', views.profile_view, name='profile'),
     path('accounts/register/', views.register_view, name='register'),
     path('accounts/login/', views.login_view, name='login'),
     path('accounts/logout/', views.logout_view, name='logout'),

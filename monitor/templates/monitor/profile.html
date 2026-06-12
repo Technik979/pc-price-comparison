@@ -1,0 +1,176 @@
+{% extends 'monitor/base.html' %}
+{% load monitor_tags %}
+{% block title %}{{ user.username }} — Профиль{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center g-4">
+    <div class="col-lg-10">
+
+      <!-- Header card -->
+      <div class="section-card mb-4 d-flex align-items-center gap-4 flex-wrap">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--purple-mid),var(--purple-light));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;flex-shrink:0">
+          {{ user.username|slice:":1"|upper }}
+        </div>
+        <div class="flex-grow-1">
+          <h3 class="fw-700 mb-0">{{ user.username }}</h3>
+          <div class="text-muted small mt-1">
+            На сайте с {{ user.date_joined|date:"d.m.Y" }}
+            &nbsp;·&nbsp;
+            {% if days_joined == 0 %}зарегистрировался сегодня
+            {% elif days_joined == 1 %}1 день
+            {% elif days_joined < 5 %}{{ days_joined }} дня
+            {% else %}{{ days_joined }} дней
+            {% endif %}
+          </div>
+        </div>
+        <a href="{% url 'watchlist' %}" class="btn btn-outline-primary btn-sm">⭐ Список отслеживания</a>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card" style="border-top-color:var(--purple-mid)">
+            <div class="stat-val">{{ enriched|length }}</div>
+            <div class="stat-lbl">Отслеживается</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card" style="border-top-color:#00a650">
+            <div class="stat-val" style="color:#00a650">{{ target_reached_count }}</div>
+            <div class="stat-lbl">Достигли цели</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card" style="border-top-color:#f5a623">
+            <div class="stat-val" style="color:#b97300;font-size:1.4rem">
+              {% if total_savings %}{{ total_savings|floatformat:0 }} ₽{% else %}—{% endif %}
+            </div>
+            <div class="stat-lbl">Можно сэкономить</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card" style="border-top-color:#005ecb">
+            <div class="stat-val" style="color:#005ecb">{{ categories_count }}</div>
+            <div class="stat-lbl">Категорий</div>
+          </div>
+        </div>
+      </div>
+
+      {% if enriched %}
+
+      <!-- Price comparison chart -->
+      <div class="section-card mb-4">
+        <div class="section-title">Сравнение цен по магазинам</div>
+        <div id="profile-chart" style="height:320px"></div>
+      </div>
+
+      <!-- Watchlist table -->
+      <div class="section-card">
+        <div class="section-title d-flex justify-content-between align-items-center">
+          <span>Список отслеживания</span>
+          <span class="text-muted fw-400" style="font-size:.8rem;font-weight:400">{{ enriched|length }} товаров</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" style="font-size:.9rem">
+            <thead>
+              <tr>
+                <th style="min-width:220px">Товар</th>
+                {% for store in ALL_STORES %}
+                <th class="text-end" style="color:{{ STORE_COLORS|dict_get:store }}">{{ store }}</th>
+                {% endfor %}
+                <th class="text-end">Лучшая</th>
+                <th class="text-end">Цель</th>
+                <th class="text-end">Экономия</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in enriched %}
+              <tr {% if row.target_ok %}style="background:rgba(0,166,80,.04)"{% endif %}>
+                <td>
+                  <a href="{% url 'component_detail' row.item.component.pk %}"
+                     class="text-decoration-none fw-600 text-dark">{{ row.item.component.name }}</a>
+                  <div class="text-muted" style="font-size:.73rem">{{ row.item.component.category.name }}</div>
+                </td>
+                {% for store in ALL_STORES %}
+                <td class="text-end {% if row.best_store == store %}best-price-cell{% endif %}">
+                  {% with p=row.prices|dict_get:store %}
+                    {% if p %}{{ p|floatformat:0 }} ₽{% else %}<span class="text-muted">—</span>{% endif %}
+                  {% endwith %}
+                </td>
+                {% endfor %}
+                <td class="text-end fw-700">
+                  {% if row.best_price %}
+                    <span class="cheaper-tag store-{{ row.best_store|store_slug }}">{{ row.best_price|floatformat:0 }} ₽</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td class="text-end">
+                  {% if row.item.target_price %}
+                    {% if row.target_ok %}
+                      <span class="text-success fw-600">✓ {{ row.item.target_price|floatformat:0 }} ₽</span>
+                    {% else %}
+                      <span class="text-muted">{{ row.item.target_price|floatformat:0 }} ₽</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted" style="font-size:.75rem">не задана</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if row.savings %}
+                    <span style="color:#00a650;font-weight:600">{{ row.savings|floatformat:0 }} ₽</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'remove_from_watchlist' row.item.component.pk %}"
+                     class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:.72rem"
+                     title="Удалить">✕</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            {% if total_savings %}
+            <tfoot>
+              <tr class="fw-700">
+                <td colspan="{{ ALL_STORES|length|add:2 }}" class="text-end text-muted" style="font-size:.8rem">Итоговая экономия при выборе лучшего магазина:</td>
+                <td class="text-end" style="color:#00a650">{{ total_savings|floatformat:0 }} ₽</td>
+                <td></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      {% else %}
+
+      <!-- Empty state -->
+      <div class="section-card text-center py-5">
+        <div style="font-size:3rem;opacity:.3">⭐</div>
+        <h5 class="fw-700 mt-3 mb-1">Список отслеживания пуст</h5>
+        <p class="text-muted small mb-3">Добавляйте товары из каталога, чтобы следить за ценами</p>
+        <a href="{% url 'catalog' %}" class="btn btn-primary px-4">Перейти в каталог</a>
+      </div>
+
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart_json %}
+<script>
+(function () {
+  const data = {{ chart_json|safe }};
+  Plotly.newPlot('profile-chart', data.data, {
+    ...data.layout,
+    responsive: true,
+    displayModeBar: false,
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
