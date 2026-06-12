@@ -9,8 +9,22 @@ from monitor.models import Category, Store, Component, PriceHistory
 from monitor.data import DEMO_PRODUCTS, LAPTOP_SPECS, CATEGORY_ICONS
 
 STORE_META = {
-    'Citilink': {'url': 'https://www.citilink.ru', 'color': '#e85d00'},
-    'DNS':      {'url': 'https://www.dns-shop.ru', 'color': '#005ecb'},
+    'Citilink':   {'url': 'https://www.citilink.ru',   'color': '#e85d00'},
+    'DNS':        {'url': 'https://www.dns-shop.ru',   'color': '#005ecb'},
+    'М.Видео':    {'url': 'https://www.mvideo.ru',     'color': '#00a650'},
+    'Эльдорадо':  {'url': 'https://www.eldorado.ru',   'color': '#f5a623'},
+}
+
+# Вероятность наличия товара в розничных магазинах по категории
+RETAIL_PROB = {
+    'Ноутбуки':           0.92,
+    'Сборки ПК':          0.30,
+    'Процессоры':         0.08,
+    'Видеокарты':         0.08,
+    'Оперативная память': 0.05,
+    'SSD':                0.12,
+    'Материнские платы':  0.04,
+    'Кабели и провода':   0.20,
 }
 
 
@@ -64,6 +78,11 @@ class Command(BaseCommand):
                     component.save()
 
                 if options['clear'] or not component.prices.exists():
+                    prob = RETAIL_PROB.get(cat_name, 0.1)
+                    has_mv  = random.random() < prob
+                    has_el  = random.random() < prob
+                    base_mv = int(base_c * random.uniform(1.05, 1.12)) if has_mv else None
+                    base_el = int(base_d * random.uniform(1.03, 1.10)) if has_el else None
                     for d in range(days, 0, -1):
                         ts = (now - timedelta(days=d)).replace(
                             hour=12, minute=0, second=0, microsecond=0
@@ -78,7 +97,19 @@ class Command(BaseCommand):
                             component=component, store=stores['DNS'],
                             price=int(base_d * trend * noise), scraped_at=ts,
                         )
-                        total_p += 2
+                        if has_mv:
+                            PriceHistory.objects.create(
+                                component=component, store=stores['М.Видео'],
+                                price=int(base_mv * trend * random.uniform(0.99, 1.01)),
+                                scraped_at=ts,
+                            )
+                        if has_el:
+                            PriceHistory.objects.create(
+                                component=component, store=stores['Эльдорадо'],
+                                price=int(base_el * trend * random.uniform(0.99, 1.01)),
+                                scraped_at=ts,
+                            )
+                        total_p += 2 + int(has_mv) + int(has_el)
                 total_c += 1
 
         self.stdout.write(self.style.SUCCESS(

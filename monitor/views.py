@@ -1,5 +1,3 @@
-import json
-
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -9,26 +7,49 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import OuterRef, Subquery, Count
 from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.text import slugify
 
 from .models import Category, Store, Component, PriceHistory, Watchlist
-from .forms import RegisterForm, LoginForm, WatchlistForm, ComponentSearchForm
+from .forms import RegisterForm, LoginForm, WatchlistForm, ComponentSearchForm, AddComponentForm
 
-CITILINK_COLOR = '#e85d00'
-DNS_COLOR = '#005ecb'
+STORE_COLORS = {
+    'Citilink':   '#e85d00',
+    'DNS':        '#005ecb',
+    'М.Видео':    '#00a650',
+    'Эльдорадо':  '#f5a623',
+}
+STORE_FILLS = {
+    'Citilink':  'rgba(232,93,0,.09)',
+    'DNS':       'rgba(0,94,203,.09)',
+    'М.Видео':   'rgba(0,166,80,.09)',
+    'Эльдорадо': 'rgba(245,166,35,.09)',
+}
+ALL_STORES = list(STORE_COLORS.keys())
 
 
 def _annotate_prices(qs):
-    latest_c = (
-        PriceHistory.objects
-        .filter(component=OuterRef('pk'), store__name='Citilink')
-        .order_by('-scraped_at').values('price')[:1]
+    def _subq(store_name):
+        return Subquery(
+            PriceHistory.objects
+            .filter(component=OuterRef('pk'), store__name=store_name)
+            .order_by('-scraped_at').values('price')[:1]
+        )
+    return qs.annotate(
+        citilink_price=_subq('Citilink'),
+        dns_price=_subq('DNS'),
+        mvideo_price=_subq('М.Видео'),
+        eldorado_price=_subq('Эльдорадо'),
     )
-    latest_d = (
-        PriceHistory.objects
-        .filter(component=OuterRef('pk'), store__name='DNS')
-        .order_by('-scraped_at').values('price')[:1]
-    )
-    return qs.annotate(citilink_price=Subquery(latest_c), dns_price=Subquery(latest_d))
+
+
+def _best_deal(citilink, dns, mvideo, eldorado):
+    prices = {'Citilink': citilink, 'DNS': dns, 'М.Видео': mvideo, 'Эльдорадо': eldorado}
+    valid = {k: v for k, v in prices.items() if v}
+    if not valid:
+        return None, None
+    best = min(valid, key=valid.get)
+    return best, valid[best]
 
 
 def index(request):
@@ -100,25 +121,17 @@ def catalog(request):
 
     rows = []
     for c in qs:
-        row = {
+        best_store, best_price = _best_deal(c.citilink_price, c.dns_price, c.mvideo_price, c.eldorado_price)
+        rows.append({
             'component': c,
             'citilink': c.citilink_price,
             'dns': c.dns_price,
+            'mvideo': c.mvideo_price,
+            'eldorado': c.eldorado_price,
+            'best_store': best_store,
+            'best_price': best_price,
             'in_watchlist': c.id in watchlist_ids,
-            'cheaper': '',
-            'cheaper_store': '',
-        }
-        if c.citilink_price and c.dns_price:
-            diff = c.dns_price - c.citilink_price
-            if diff > 0:
-                row['cheaper'] = f'Citilink −{diff:,} ₽'.replace(',', ' ')
-                row['cheaper_store'] = 'citilink'
-            elif diff < 0:
-                row['cheaper'] = f'DNS −{abs(diff):,} ₽'.replace(',', ' ')
-                row['cheaper_store'] = 'dns'
-            else:
-                row['cheaper'] = '='
-        rows.append(row)
+        })
 
     show_specs = active_category and active_category.name == 'Ноутбуки'
 
@@ -148,8 +161,8 @@ def component_detail(request, pk):
     records = PriceHistory.objects.filter(component=component).select_related('store').order_by('scraped_at')
     if records.exists():
         df = pd.DataFrame(list(records.values('store__name', 'price', 'scraped_at')))
-        colors = {'Citilink': CITILINK_COLOR, 'DNS': DNS_COLOR}
-        fills = {'Citilink': 'rgba(232,93,0,.09)', 'DNS': 'rgba(0,94,203,.09)'}
+        colors = STORE_COLORS
+        fills = STORE_FILLS
         fig = go.Figure()
         for store in df['store__name'].unique():
             sub = df[df['store__name'] == store].sort_values('scraped_at')
@@ -177,17 +190,22 @@ def component_detail(request, pk):
         fig.update_yaxes(showgrid=True, gridcolor='#f5f5f5', zeroline=False)
         plotly_json = fig.to_json()
 
-    citilink_price = component.get_latest_price('Citilink')
-    dns_price = component.get_latest_price('DNS')
+    all_prices = {s: component.get_latest_price(s) for s in ALL_STORES}
+
+    similar = _annotate_prices(
+        Component.objects.filter(category=component.category)
+        .exclude(pk=component.pk).select_related('category')
+    )[:6]
 
     return render(request, 'monitor/component_detail.html', {
         'component': component,
-        'citilink_price': citilink_price,
-        'dns_price': dns_price,
+        'all_prices': all_prices,
+        'store_colors': STORE_COLORS,
         'plotly_json': plotly_json,
         'in_watchlist': in_watchlist,
         'watchlist_form': WatchlistForm(instance=watchlist_entry) if request.user.is_authenticated else None,
         'watchlist_entry': watchlist_entry,
+        'similar': similar,
     })
 
 
@@ -196,21 +214,24 @@ def watchlist_view(request):
     items = Watchlist.objects.filter(user=request.user).select_related('component__category')
     enriched = []
     for item in items:
-        citilink = item.component.get_latest_price('Citilink')
-        dns = item.component.get_latest_price('DNS')
-        valid = [p for p in [citilink, dns] if p is not None]
-        best = min(valid) if valid else None
+        prices = {s: item.component.get_latest_price(s) for s in ALL_STORES}
+        valid = {k: v for k, v in prices.items() if v}
+        best_store = min(valid, key=valid.get) if valid else None
+        best_price = valid[best_store] if best_store else None
         enriched.append({
             'item': item,
-            'citilink': citilink,
-            'dns': dns,
-            'best_price': best,
-            'target_reached': bool(item.target_price and best and best <= item.target_price),
+            'prices': prices,
+            'best_store': best_store,
+            'best_price': best_price,
+            'target_reached': bool(item.target_price and best_price and best_price <= item.target_price),
         })
-    return render(request, 'monitor/watchlist.html', {'items': enriched})
+    return render(request, 'monitor/watchlist.html', {
+        'items': enriched,
+        'stores': ALL_STORES,
+        'store_colors': STORE_COLORS,
+    })
 
 
-@login_required
 def add_to_watchlist(request, component_id):
     component = get_object_or_404(Component, id=component_id)
     entry, _ = Watchlist.objects.get_or_create(user=request.user, component=component)
@@ -228,6 +249,36 @@ def remove_from_watchlist(request, component_id):
     messages.info(request, 'Товар удалён из списка отслеживания.')
     return redirect('watchlist')
 
+
+
+def add_component(request):
+    if request.method == 'POST':
+        form = AddComponentForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            base_slug = slugify(cd['name'], allow_unicode=True)[:380]
+            slug, n = base_slug, 1
+            while Component.objects.filter(slug=slug).exists():
+                slug = f'{base_slug}-{n}'
+                n += 1
+            component = Component.objects.create(
+                name=cd['name'], category=cd['category'],
+                specs=cd.get('specs', ''), slug=slug,
+            )
+            now = timezone.now()
+            store_map = {'price_citilink': 'Citilink', 'price_dns': 'DNS',
+                         'price_mvideo': 'М.Видео', 'price_eldorado': 'Эльдорадо'}
+            for field, store_name in store_map.items():
+                price = cd.get(field)
+                if price:
+                    store, _ = Store.objects.get_or_create(name=store_name)
+                    PriceHistory.objects.create(component=component, store=store,
+                                                price=price, scraped_at=now)
+            messages.success(request, f'«{component.name}» добавлен в каталог.')
+            return redirect('component_detail', pk=component.pk)
+    else:
+        form = AddComponentForm()
+    return render(request, 'monitor/add_component.html', {'form': form})
 
 def register_view(request):
     if request.user.is_authenticated:
@@ -280,15 +331,127 @@ def api_search(request):
     if cat:
         qs = qs.filter(category__slug=cat)
     qs = _annotate_prices(qs.order_by('name'))[:30]
-    results = [
-        {
+    results = []
+    for c in qs:
+        best_store, best_price = _best_deal(c.citilink_price, c.dns_price, c.mvideo_price, c.eldorado_price)
+        results.append({
             'id': c.id,
             'name': c.name,
             'category': c.category.name,
             'specs': c.specs,
             'citilink': c.citilink_price,
             'dns': c.dns_price,
-        }
-        for c in qs
-    ]
+            'mvideo': c.mvideo_price,
+            'eldorado': c.eldorado_price,
+            'best_store': best_store,
+            'best_price': best_price,
+        })
+    return JsonResponse({'results': results})
+
+
+def api_parse_url(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    url = request.POST.get('url', '').strip()
+    if not url:
+        return JsonResponse({'error': 'URL не указан'}, status=400)
+    from .scraper import parse_url
+    return JsonResponse(parse_url(url))
+
+
+def api_find_prices(request):
+    """Find prices for a product across all stores.
+    Searches local DB first (fast), then tries live scraping in parallel.
+    GET ?name=<product name>
+    Returns: {prices: {store: {price, source} or null}, db_name, db_id}
+    """
+    name = request.GET.get('name', '').strip()
+    if len(name) < 3:
+        return JsonResponse({'error': 'Имя слишком короткое'}, status=400)
+
+    from django.db.models import Q
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from .scraper import STORE_SEARCH_FUNCS, SEARCH_TIMEOUT
+
+    # Step 1: search our DB by keyword overlap (AND → OR fallback)
+    words = [w for w in name.split() if len(w) > 2][:5]
+    db_component = None
+    db_prices = {}
+
+    if words:
+        q_and = Q()
+        for w in words:
+            q_and &= Q(name__icontains=w)
+        db_component = Component.objects.filter(q_and).first()
+
+        if not db_component and len(words) >= 2:
+            q_or = Q()
+            for w in words:
+                q_or |= Q(name__icontains=w)
+            db_component = Component.objects.filter(q_or).order_by('name').first()
+
+        if db_component:
+            for store_name in ALL_STORES:
+                price = db_component.get_latest_price(store_name)
+                if price:
+                    db_prices[store_name] = {'price': price, 'source': 'db'}
+
+    # Step 2: live scraping in parallel (best-effort)
+    live_prices = {}
+
+    def _scrape(store_name, fn):
+        try:
+            price = fn(name)
+            return store_name, price
+        except Exception:
+            return store_name, None
+
+    try:
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            futures = {ex.submit(_scrape, s, fn): s for s, fn in STORE_SEARCH_FUNCS.items()}
+            for future in as_completed(futures, timeout=SEARCH_TIMEOUT + 3):
+                try:
+                    store, price = future.result(timeout=1)
+                    if price:
+                        live_prices[store] = {'price': price, 'source': 'live'}
+                except Exception:
+                    pass
+    except Exception:
+        pass  # TimeoutError from as_completed — use whatever arrived
+
+    # Merge: prefer live prices over DB
+    prices = {}
+    for store in ALL_STORES:
+        if store in live_prices:
+            prices[store] = live_prices[store]
+        elif store in db_prices:
+            prices[store] = db_prices[store]
+        else:
+            prices[store] = None
+
+    return JsonResponse({
+        'prices': prices,
+        'db_name': db_component.name if db_component else None,
+        'db_id': db_component.id if db_component else None,
+    })
+
+
+def api_similar(request):
+    name = request.GET.get('name', '').strip()
+    category_id = request.GET.get('category', '').strip()
+    if len(name) < 3:
+        return JsonResponse({'results': []})
+    from django.db.models import Q
+    qs = Component.objects.select_related('category')
+    if category_id:
+        qs = qs.filter(category_id=category_id)
+    words = [w for w in name.split() if len(w) > 2][:5]
+    if not words:
+        return JsonResponse({'results': []})
+    q = Q()
+    for w in words:
+        q |= Q(name__icontains=w)
+    qs = qs.filter(q).order_by('name')[:8]
+    results = [{'id': c.id, 'name': c.name, 'category': c.category.name,
+                'url': f'/component/{c.id}/'} for c in qs]
     return JsonResponse({'results': results})

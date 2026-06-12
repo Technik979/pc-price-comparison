@@ -1,0 +1,327 @@
+{% extends 'monitor/base.html' %}
+{% block title %}Добавить товар — PC Price Monitor{% endblock %}
+{% block nav_catalog %}active{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Каталог</a></li>
+          <li class="breadcrumb-item active">Добавить товар</li>
+        </ol>
+      </nav>
+
+      <!-- URL parser block -->
+      <div class="section-card mb-3">
+        <div class="section-title" style="font-size:.9rem">Загрузить по ссылке</div>
+        <p class="text-muted small mb-2">
+          Вставьте ссылку с любого магазина — система автоматически найдёт цены во всех 4 магазинах
+        </p>
+        <div class="input-group">
+          <input type="url" id="url-input" class="form-control"
+                 placeholder="https://www.citilink.ru/product/...">
+          <button class="btn btn-outline-primary" id="url-parse-btn" type="button">
+            <span id="url-btn-text">Загрузить</span>
+            <span id="url-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+          </button>
+        </div>
+        <div id="url-status" class="mt-2 small"></div>
+        <!-- Per-store search progress (shown during find-prices) -->
+        <div id="store-search-status" class="d-none mt-2">
+          <div class="text-muted small mb-1">Поиск цен в магазинах...</div>
+          <div class="d-flex flex-wrap gap-2" id="store-badges"></div>
+        </div>
+      </div>
+
+      <!-- Main form -->
+      <div class="section-card">
+        <h4 class="fw-700 mb-1">Добавить товар</h4>
+        <p class="text-muted small mb-4">
+          Пустое поле цены = товара нет в этом магазине (прочерк в каталоге)
+        </p>
+
+        <form method="post" novalidate id="add-form">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger small py-2">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label fw-600">{{ form.name.label }}</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+              <!-- similar suggestions -->
+              <div id="similar-box" class="mt-2 d-none">
+                <div class="text-muted small mb-1">Похожие товары в каталоге:</div>
+                <div id="similar-list" class="d-flex flex-column gap-1"></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-600">{{ form.category.label }}</label>
+              {{ form.category }}
+              {% if form.category.errors %}<div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-600">{{ form.specs.label }}</label>
+            {{ form.specs }}
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2" style="border-bottom:2px solid var(--border); padding-bottom:.6rem">
+              <span class="fw-700" style="font-size:.9rem; color:var(--purple-dark)">Цены по магазинам</span>
+              <button type="button" id="find-prices-btn" class="btn btn-sm btn-outline-success d-none">
+                <span id="fp-btn-text">Найти везде</span>
+                <span id="fp-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+              </button>
+            </div>
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <label class="form-label fw-600 small" style="color:#e85d00">Citilink</label>
+                {{ form.price_citilink }}
+                {% if form.price_citilink.errors %}<div class="text-danger small">{{ form.price_citilink.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label fw-600 small" style="color:#005ecb">DNS</label>
+                {{ form.price_dns }}
+                {% if form.price_dns.errors %}<div class="text-danger small">{{ form.price_dns.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label fw-600 small" style="color:#00a650">М.Видео</label>
+                {{ form.price_mvideo }}
+                {% if form.price_mvideo.errors %}<div class="text-danger small">{{ form.price_mvideo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label fw-600 small" style="color:#c17d10">Эльдорадо</label>
+                {{ form.price_eldorado }}
+                {% if form.price_eldorado.errors %}<div class="text-danger small">{{ form.price_eldorado.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary px-4">Добавить в каталог</button>
+            <a href="{% url 'catalog' %}" class="btn btn-outline-secondary">Отмена</a>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const STORE_FIELDS = {
+    'Citilink':  'id_price_citilink',
+    'DNS':       'id_price_dns',
+    'М.Видео':   'id_price_mvideo',
+    'Эльдорадо': 'id_price_eldorado',
+  };
+  const STORE_COLORS = {
+    'Citilink':  '#e85d00',
+    'DNS':       '#005ecb',
+    'М.Видео':   '#00a650',
+    'Эльдорадо': '#c17d10',
+  };
+
+  // ── URL parser ──────────────────────────────────────────────────────────────
+  const urlInput  = document.getElementById('url-input');
+  const parseBtn  = document.getElementById('url-parse-btn');
+  const btnText   = document.getElementById('url-btn-text');
+  const spinner   = document.getElementById('url-spinner');
+  const statusEl  = document.getElementById('url-status');
+
+  function setStatus(msg, ok) {
+    statusEl.innerHTML = msg;
+    statusEl.className = 'mt-2 small ' + (ok === true ? 'text-success' : ok === false ? 'text-danger' : 'text-muted');
+  }
+
+  parseBtn.addEventListener('click', function () {
+    const url = urlInput.value.trim();
+    if (!url) { setStatus('Введите ссылку', false); return; }
+
+    btnText.textContent = 'Загрузка...';
+    spinner.classList.remove('d-none');
+    parseBtn.disabled = true;
+    statusEl.innerHTML = '';
+
+    const fd = new FormData();
+    fd.append('url', url);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('/api/parse-url/', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          setStatus('Ошибка: ' + data.error, false);
+        } else {
+          const nameEl = document.getElementById('id_name');
+          if (nameEl && data.name) nameEl.value = data.name;
+          if (data.price && data.store && STORE_FIELDS[data.store]) {
+            const priceEl = document.getElementById(STORE_FIELDS[data.store]);
+            if (priceEl) priceEl.value = data.price;
+          }
+          const priceMsg = data.price
+            ? ` · ${data.price.toLocaleString('ru-RU')} ₽`
+            : ' · цена не найдена (заполните вручную)';
+          setStatus('Загружено из ' + (data.store || '') + priceMsg, !!data.price);
+          if (data.name) {
+            triggerSimilar(data.name);
+            startFindPrices(data.name, data.store);
+          }
+        }
+      })
+      .catch(() => setStatus('Ошибка сети. Проверьте соединение.', false))
+      .finally(() => {
+        btnText.textContent = 'Загрузить';
+        spinner.classList.add('d-none');
+        parseBtn.disabled = false;
+      });
+  });
+
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); parseBtn.click(); } });
+
+  // ── Cross-store price search ────────────────────────────────────────────────
+  const storeSearchStatus = document.getElementById('store-search-status');
+  const storeBadges       = document.getElementById('store-badges');
+  const findPricesBtn     = document.getElementById('find-prices-btn');
+  const fpBtnText         = document.getElementById('fp-btn-text');
+  const fpSpinner         = document.getElementById('fp-spinner');
+
+  function setBadge(store, state) {
+    // state: 'loading' | 'found' | 'notfound'
+    let el = document.getElementById('badge-' + store.replace(/[^a-z]/gi, ''));
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'badge-' + store.replace(/[^a-z]/gi, '');
+      el.className = 'badge rounded-pill';
+      el.style.fontSize = '.75rem';
+      storeBadges.appendChild(el);
+    }
+    const color = STORE_COLORS[store] || '#888';
+    if (state === 'loading') {
+      el.style.background = '#f0f0f0';
+      el.style.color = '#888';
+      el.innerHTML = `<span class="spinner-border spinner-border-sm me-1" style="width:.6rem;height:.6rem"></span>${store}`;
+    } else if (state === 'found') {
+      el.style.background = color + '22';
+      el.style.color = color;
+      el.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" class="me-1"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>${store}`;
+    } else {
+      el.style.background = '#f5f5f5';
+      el.style.color = '#aaa';
+      el.innerHTML = store + ' · нет';
+    }
+  }
+
+  function startFindPrices(name, skipStore) {
+    if (!name || name.length < 3) return;
+    storeSearchStatus.classList.remove('d-none');
+    storeBadges.innerHTML = '';
+    // show loading badges for stores other than the source
+    Object.keys(STORE_FIELDS).forEach(store => {
+      if (store !== skipStore) setBadge(store, 'loading');
+    });
+
+    fetch('/api/find-prices/?name=' + encodeURIComponent(name))
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { storeSearchStatus.classList.add('d-none'); return; }
+        let found = 0;
+        Object.entries(data.prices || {}).forEach(([store, info]) => {
+          if (store === skipStore) return;  // already filled by URL parse
+          const fieldId = STORE_FIELDS[store];
+          const priceEl = fieldId ? document.getElementById(fieldId) : null;
+          if (info && info.price) {
+            if (priceEl && !priceEl.value) priceEl.value = info.price;
+            setBadge(store, 'found');
+            found++;
+          } else {
+            setBadge(store, 'notfound');
+          }
+        });
+        // update main status
+        const srcLabel = info => info && info.source === 'live' ? 'сайт' : 'база';
+        const summary = found > 0
+          ? `Найдено в ${found} магазин${found===1?'е':found<5?'ах':'ах'} — цены заполнены`
+          : 'Цены в других магазинах не найдены — заполните вручную';
+        if (found > 0 && data.db_id) {
+          setStatus(
+            summary + ` <a href="/component/${data.db_id}/" class="ms-1" target="_blank" style="font-size:.8rem">смотреть в каталоге</a>`,
+            null
+          );
+        } else {
+          setStatus(summary, found > 0);
+        }
+      })
+      .catch(() => {
+        storeSearchStatus.classList.add('d-none');
+      });
+  }
+
+  // Manual "Найти везде" button
+  if (findPricesBtn) {
+    findPricesBtn.addEventListener('click', function () {
+      const nameEl = document.getElementById('id_name');
+      const name = nameEl ? nameEl.value.trim() : '';
+      if (name.length < 3) return;
+      fpBtnText.textContent = 'Ищем...';
+      fpSpinner.classList.remove('d-none');
+      findPricesBtn.disabled = true;
+      startFindPrices(name, null);
+      setTimeout(() => {
+        fpBtnText.textContent = 'Найти везде';
+        fpSpinner.classList.add('d-none');
+        findPricesBtn.disabled = false;
+      }, 10000);
+    });
+  }
+
+  // ── Similar products ────────────────────────────────────────────────────────
+  const nameInput    = document.getElementById('id_name');
+  const categorySel  = document.getElementById('id_category');
+  const similarBox   = document.getElementById('similar-box');
+  const similarList  = document.getElementById('similar-list');
+  let simTimer;
+
+  function triggerSimilar(name) {
+    const cat = categorySel ? categorySel.value : '';
+    if (name.length < 3) { similarBox.classList.add('d-none'); return; }
+    fetch('/api/similar/?name=' + encodeURIComponent(name) + '&category=' + cat)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.results.length) { similarBox.classList.add('d-none'); return; }
+        similarList.innerHTML = data.results.map(r =>
+          `<a href="${r.url}" target="_blank" class="similar-item text-decoration-none d-block px-2 py-1 rounded small">
+            <span class="text-muted" style="font-size:.7rem">${r.category}</span><br>
+            <span class="text-dark fw-500">${r.name}</span>
+          </a>`
+        ).join('');
+        similarBox.classList.remove('d-none');
+      })
+      .catch(() => {});
+  }
+
+  if (nameInput) {
+    nameInput.addEventListener('input', function () {
+      const name = nameInput.value.trim();
+      clearTimeout(simTimer);
+      simTimer = setTimeout(() => triggerSimilar(name), 400);
+      // show "Найти везде" button when name is long enough
+      if (findPricesBtn) {
+        findPricesBtn.classList.toggle('d-none', name.length < 3);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

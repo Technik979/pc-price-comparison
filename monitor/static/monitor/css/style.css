@@ -195,8 +195,16 @@ body {
   font-size: .78rem;
   font-weight: 600;
 }
-.cheaper-tag.citilink { background: #fff0e8; color: var(--citilink); }
-.cheaper-tag.dns      { background: #e6f0ff; color: var(--dns); }
+.cheaper-tag.store-citilink  { background: #fff0e8; color: #e85d00; }
+.cheaper-tag.store-dns       { background: #e6f0ff; color: #005ecb; }
+.cheaper-tag.store-mvideo    { background: #e8f7ee; color: #007a3a; }
+.cheaper-tag.store-eldorado  { background: #fef6e4; color: #a36200; }
+
+/* ---- Best price cell ---- */
+.best-price-cell {
+  background: rgba(34,197,94,.07);
+  border-radius: 4px;
+}
 
 /* ---- Table tweaks ---- */
 .table th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
@@ -243,3 +251,14 @@ body {
 
 /* ---- Search input id ---- */
 #search-input { border-radius: 8px 0 0 8px !important; }
+
+/* ---- Similar item suggestion ---- */
+.similar-item {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  transition: background .12s;
+}
+.similar-item:hover { background: #f4f0fc; }
+
+/* ---- Price row — missing store ---- */
+.price-row.opacity-50 { opacity: .45; }
