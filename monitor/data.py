@@ -134,6 +134,14 @@ DEMO_PRODUCTS = {
         ('Samsung Galaxy Book3 360 i7-1360P 16GB',             89990,  91490),
         ('TECNO MegaBook T1 i5-1235U 16GB 512GB',             44990,  45990),
         ('Xiaomi RedmiBook Pro 14 i7-13700H 16GB',             69990,  71490),
+        ('ASUS ROG Zephyrus G14 Ryzen 9 7940HS RTX 4060',    139990, 141990),
+        ('Acer Predator Helios 300 i7-12700H RTX 3070',        109990, 111990),
+        ('HP Victus 15 i5-12450H RTX 3050 16GB',               59990,  61490),
+        ('Honor MagicBook Pro 16 i9-13900H 16GB 1TB',          84990,  86490),
+        ('Lenovo LOQ 15IRH8 i5-13420H RTX 4060 16GB',          79990,  81490),
+        ('MSI Modern 14 i7-1355U 16GB 512GB',                  64990,  66490),
+        ('Xiaomi Notebook Pro 120G i7-12700H 16GB',            74990,  76490),
+        ('MSI Raider GE76 i9-12900HK RTX 3080 32GB',          199990, 203990),
     ],
     'Сборки ПК': [
         ('Медиацентр: Intel N100 mini-PC 8GB 256GB',                   14990,  15990),
@@ -226,6 +234,58 @@ DEMO_PRODUCTS = {
         ('Panasonic NN-ST342WZPE 23л 800Вт',              9990,  10490),
         ('Bosch BEL554MS0 21л 900Вт',                    13990,  14490),
     ],
+    'Телевизоры': [
+        ('Haier 43 Smart TV S4 43" LED 4K',           24990,  25990),
+        ('Xiaomi A2 43" LED 4K',                       27990,  28990),
+        ('Hisense 50A6K 50" LED 4K',                   32990,  33990),
+        ('Philips 55PUS8108 55" LED 4K Ambilight',     49990,  51490),
+        ('Hisense 55U7HQ 55" QLED 4K',                44990,  45990),
+        ('TCL 55C745 55" QLED 4K 144Hz',               44990,  45990),
+        ('LG 55NANO756QA 55" NanoCell 4K',             44990,  46490),
+        ('Samsung QE55Q60C 55" QLED 4K',               59990,  61490),
+        ('Sony KD-55X85L 55" LED 4K',                  74990,  76490),
+        ('Samsung QE65Q80C 65" QLED 4K',               99990, 101990),
+        ('Samsung QE75Q60C 75" QLED 4K',              134990, 137490),
+        ('LG OLED55C3RLA 55" OLED 4K 120Hz',          129990, 131990),
+        ('Sony KD-65X95L 65" Mini LED 4K',            149990, 152990),
+        ('LG OLED65C3RLA 65" OLED 4K 120Hz',          184990, 188990),
+    ],
+    'Планшеты': [
+        ('Lenovo Tab M10 Plus 10.6" 4/128GB',          19990,  20990),
+        ('Samsung Galaxy Tab A9+ 11" 4/64GB',          24990,  25990),
+        ('Realme Pad X 10.95" 4/128GB',                22990,  23990),
+        ('Xiaomi Pad 6 11" 6/128GB',                   34990,  35990),
+        ('Huawei MatePad 11.5" 8/256GB',               39990,  40990),
+        ('Samsung Galaxy Tab S9 FE 10.9" 6/128GB',    44990,  45990),
+        ('Apple iPad 10 10.9" 64GB Wi-Fi',             49990,  51490),
+        ('Apple iPad Air 5 10.9" 64GB Wi-Fi',          64990,  66490),
+        ('Samsung Galaxy Tab S9+ 12.4" 12/256GB',      89990,  91490),
+        ('Apple iPad Pro 11 M2 128GB Wi-Fi',           89990,  91490),
+        ('Apple iPad Pro 13 M4 256GB Wi-Fi',          149990, 152990),
+    ],
+    'Мониторы': [
+        ('AOC 24G2SAE 23.8" IPS 165Hz FHD',           14990,  15490),
+        ('Xiaomi G27i 27" IPS 100Hz FHD',              17990,  18490),
+        ('Samsung C27G55TQWI 27" VA 165Hz QHD',        22990,  23990),
+        ('MSI Optix MAG274QRF 27" IPS 165Hz QHD',      29990,  30990),
+        ('LG 27GP850-B 27" IPS 165Hz QHD',             34990,  35990),
+        ('BenQ MOBIUZ EX2710Q 27" IPS 165Hz QHD',      44990,  45990),
+        ('Dell U2722D 27" IPS 4K 60Hz',                54990,  56490),
+        ('LG 27GP950-B 27" Nano IPS 4K 160Hz',         74990,  76490),
+        ('ASUS ROG Swift PG27AQDM 27" OLED QHD 240Hz',129990, 132990),
+    ],
+    'Наушники': [
+        ('Xiaomi Redmi Buds 4 Pro TWS',                 4990,   5290),
+        ('JBL Tune 770NC накладные',                    7990,   8290),
+        ('Nothing Ear (2) TWS',                         9990,  10490),
+        ('Samsung Galaxy Buds2 Pro TWS',               14990,  15490),
+        ('Sony WF-1000XM5 TWS',                        24990,  25990),
+        ('Apple AirPods 4 TWS',                        19990,  20490),
+        ('Bose QuietComfort 45 накладные',              39990,  40990),
+        ('Sony WH-1000XM5 накладные',                  34990,  35990),
+        ('Apple AirPods Max накладные',                69990,  71490),
+        ('Sennheiser Momentum 4 Wireless накладные',   44990,  45990),
+    ],
 }
 
 LAPTOP_SPECS = {
@@ -273,6 +333,23 @@ LAPTOP_SPECS = {
         '15.6" FHD AMOLED Touch · Intel Core i7-1360P · 16GB DDR4 · 512GB NVMe · Intel Iris Xe',
     'Xiaomi RedmiBook Pro 14 i7-13700H 16GB':
         '14" 2.8K OLED 90Hz · Intel Core i7-13700H · 16GB DDR5 · 512GB NVMe · Intel Arc',
+    # Новые ноутбуки
+    'ASUS ROG Zephyrus G14 Ryzen 9 7940HS RTX 4060':
+        '14" QHD+ IPS 165Hz · AMD Ryzen 9 7940HS · 32GB DDR5 · 1TB NVMe · RTX 4060 8GB',
+    'Acer Predator Helios 300 i7-12700H RTX 3070':
+        '15.6" QHD IPS 165Hz · Intel Core i7-12700H · 16GB DDR5 · 512GB NVMe · RTX 3070 Ti 8GB',
+    'HP Victus 15 i5-12450H RTX 3050 16GB':
+        '15.6" FHD IPS 144Hz · Intel Core i5-12450H · 16GB DDR4 · 512GB NVMe · RTX 3050 4GB',
+    'Honor MagicBook Pro 16 i9-13900H 16GB 1TB':
+        '16" 2.5K IPS 165Hz · Intel Core i9-13900H · 16GB DDR5 · 1TB NVMe · Intel Arc',
+    'Lenovo LOQ 15IRH8 i5-13420H RTX 4060 16GB':
+        '15.6" FHD IPS 144Hz · Intel Core i5-13420H · 16GB DDR5 · 512GB NVMe · RTX 4060 8GB',
+    'MSI Modern 14 i7-1355U 16GB 512GB':
+        '14" FHD IPS · Intel Core i7-1355U · 16GB DDR4 · 512GB NVMe · Intel Iris Xe',
+    'Xiaomi Notebook Pro 120G i7-12700H 16GB':
+        '15.6" 3.2K OLED 120Hz · Intel Core i7-12700H · 16GB DDR5 · 512GB NVMe · Intel Arc',
+    'MSI Raider GE76 i9-12900HK RTX 3080 32GB':
+        '17.3" QHD IPS 240Hz · Intel Core i9-12900HK · 32GB DDR5 · 2TB NVMe · RTX 3080 Ti 16GB',
     # Стиральные машины
     'Candy CS4 1272DE/2-07 7кг 1200rpm':   '7 кг · 1200 об/мин · фронтальная · A++ · 43 дБ',
     'Indesit IWUB 4085 CIS 8кг 800rpm':    '8 кг · 800 об/мин · фронтальная · A+ · 55 дБ',
@@ -355,4 +432,8 @@ CATEGORY_ICONS = {
     'Пылесосы':            '🌀',
     'Холодильники':        '🧊',
     'Микроволновые печи':  '📡',
+    'Телевизоры':  '📺',
+    'Планшеты':    '📱',
+    'Мониторы':    '🖥',
+    'Наушники':    '🎧',
 }
