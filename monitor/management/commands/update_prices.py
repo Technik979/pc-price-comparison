@@ -7,6 +7,7 @@ from django.utils.text import slugify
 
 from monitor.models import Category, Store, Component, PriceHistory
 from monitor.data import DEMO_PRODUCTS, LAPTOP_SPECS, CATEGORY_ICONS
+PRODUCT_SPECS = LAPTOP_SPECS  # covers laptops + appliances + all other products
 
 STORE_META = {
     'Citilink':   {'url': 'https://www.citilink.ru',   'color': '#e85d00'},
@@ -24,7 +25,13 @@ RETAIL_PROB = {
     'Оперативная память': 0.05,
     'SSD':                0.12,
     'Материнские платы':  0.04,
-    'Кабели и провода':   0.20,
+    'Кабели и провода':    0.20,
+    # Бытовая техника — есть во всех 4 магазинах
+    'Стиральные машины':   1.00,
+    'Посудомоечные машины':1.00,
+    'Пылесосы':            1.00,
+    'Холодильники':        1.00,
+    'Микроволновые печи':  1.00,
 }
 
 
@@ -59,7 +66,7 @@ class Command(BaseCommand):
             )
 
             for prod_name, base_c, base_d in products:
-                specs = LAPTOP_SPECS.get(prod_name, '')
+                specs = PRODUCT_SPECS.get(prod_name, '')
                 slug = slugify(prod_name, allow_unicode=True)[:380]
                 # ensure uniqueness
                 n = 1
